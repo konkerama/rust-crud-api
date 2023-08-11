@@ -17,7 +17,6 @@ pub struct CreateOrderSchema {
     pub product_name: String,
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateCustomerSchema {
     pub customer_name: String,

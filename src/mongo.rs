@@ -1,12 +1,14 @@
-use crate::response::{OrderData, OrderResponse, SingleOrderResponse, OrderListResponse, DeleteOrderResponse};
+use crate::response::{
+    DeleteOrderResponse, OrderData, OrderListResponse, OrderResponse, SingleOrderResponse,
+};
 use crate::{model::OrderModel, schema::CreateOrderSchema};
+use crate::{Error, Result};
 use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId, Document};
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
 use mongodb::{bson, options::ClientOptions, Client, Collection};
-use std::str::FromStr;
 use std::convert::TryFrom;
-use crate::{Error, Result};
+use std::str::FromStr;
 
 #[derive(Clone, Debug)]
 pub struct MONGO {
@@ -15,15 +17,17 @@ pub struct MONGO {
 }
 
 impl MONGO {
-    pub async fn init() -> Result<Self> { 
-        let mongodb_username: String = 
-            std::env::var("ME_CONFIG_MONGODB_ADMINUSERNAME").expect("ME_CONFIG_MONGODB_ADMINUSERNAME must be set.");
-        let mongodb_passwd: String = 
-            std::env::var("ME_CONFIG_MONGODB_ADMINPASSWORD").expect("ME_CONFIG_MONGODB_ADMINPASSWORD must be set.");
-        let mongodb_server: String = 
-            std::env::var("ME_CONFIG_MONGODB_SERVER").expect("ME_CONFIG_MONGODB_SERVER must be set.");
-        let mongodb_uri = 
-            format!("mongodb://{}:{}@{}/", mongodb_username, mongodb_passwd,mongodb_server);
+    pub async fn init() -> Result<Self> {
+        let mongodb_username: String = std::env::var("ME_CONFIG_MONGODB_ADMINUSERNAME")
+            .expect("ME_CONFIG_MONGODB_ADMINUSERNAME must be set.");
+        let mongodb_passwd: String = std::env::var("ME_CONFIG_MONGODB_ADMINPASSWORD")
+            .expect("ME_CONFIG_MONGODB_ADMINPASSWORD must be set.");
+        let mongodb_server: String = std::env::var("ME_CONFIG_MONGODB_SERVER")
+            .expect("ME_CONFIG_MONGODB_SERVER must be set.");
+        let mongodb_uri = format!(
+            "mongodb://{}:{}@{}/",
+            mongodb_username, mongodb_passwd, mongodb_server
+        );
         let database_name: String =
             std::env::var("MONGO_INITDB_DATABASE").expect("MONGO_INITDB_DATABASE must be set.");
         let mongodb_note_collection: String =
@@ -31,12 +35,12 @@ impl MONGO {
 
         let mut client_options = ClientOptions::parse(mongodb_uri)
             .await
-            .map_err(|e|Error::MongoParsingError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoParsingError { e: (e.to_string()) })?;
 
         client_options.app_name = Some(database_name.to_string());
 
         let client = Client::with_options(client_options)
-            .map_err(|e|Error::MongoConnectionError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoConnectionError { e: (e.to_string()) })?;
         let database = client.database(database_name.as_str());
 
         let note_collection = database.collection(mongodb_note_collection.as_str());
@@ -60,11 +64,11 @@ impl MONGO {
             .note_collection
             .find(None, find_options)
             .await
-            .map_err(|e|Error::MongoQueryError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
 
         let mut json_result: Vec<OrderResponse> = Vec::new();
         while let Some(doc) = cursor.next().await {
-            println!("{:?}",doc);
+            println!("{:?}", doc);
             json_result.push(self.doc_to_order(&doc.unwrap())?);
         }
 
@@ -80,22 +84,19 @@ impl MONGO {
     pub async fn create_order(&self, body: &CreateOrderSchema) -> Result<SingleOrderResponse> {
         let customer_name = body.customer_name.to_owned();
         let product_name = body.product_name.to_owned();
-        
+
         let doc = doc! {"customer_name": customer_name, "product_name": product_name};
 
-        let insert_result = self
-            .collection
-            .insert_one(&doc, None)
-            .await
-            .map_err(|e| {
-                if e.to_string()
-                    .contains("E11000 duplicate key error collection"){
-                    tracing::error!("🔥 MongoDuplicateError: {:?}", e);
-                    std::process::exit(1);
-                }
-                tracing::error!("🔥 MongoQueryError: {:?}", e);
+        let insert_result = self.collection.insert_one(&doc, None).await.map_err(|e| {
+            if e.to_string()
+                .contains("E11000 duplicate key error collection")
+            {
+                tracing::error!("🔥 MongoDuplicateError: {:?}", e);
                 std::process::exit(1);
-            })?;
+            }
+            tracing::error!("🔥 MongoQueryError: {:?}", e);
+            std::process::exit(1);
+        })?;
 
         let new_id = insert_result
             .inserted_id
@@ -106,8 +107,7 @@ impl MONGO {
             .note_collection
             .find_one(doc! {"_id":new_id }, None)
             .await
-            .map_err(|e|Error::MongoQueryError { e: (e.to_string()) })?;
-
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
 
         let note_response = SingleOrderResponse {
             status: "success".to_string(),
@@ -121,14 +121,13 @@ impl MONGO {
 
     pub async fn get_order(&self, id: &str) -> Result<SingleOrderResponse> {
         let oid = ObjectId::from_str(id)
-            .map_err(|e|Error::MongoInvalidIDError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoInvalidIDError { e: (e.to_string()) })?;
 
         let note_doc = self
             .note_collection
             .find_one(doc! {"_id":oid }, None)
             .await
-            .map_err(|e|Error::MongoQueryError { e: (e.to_string()) })?;
-
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
 
         let note_response = SingleOrderResponse {
             status: "success".to_string(),
@@ -146,7 +145,7 @@ impl MONGO {
         body: &CreateOrderSchema,
     ) -> Result<SingleOrderResponse> {
         let oid = ObjectId::from_str(id)
-            .map_err(|e|Error::MongoInvalidIDError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoInvalidIDError { e: (e.to_string()) })?;
         let query = doc! {
             "_id": oid,
         };
@@ -156,7 +155,7 @@ impl MONGO {
             .build();
 
         let serialized_data = bson::to_bson(body)
-            .map_err(|e|Error::MongoSerializeBsonError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoSerializeBsonError { e: (e.to_string()) })?;
         let document = serialized_data.as_document().unwrap();
         let update = doc! {"$set": document};
 
@@ -164,7 +163,7 @@ impl MONGO {
             .note_collection
             .find_one_and_update(query, update, find_one_and_update_options)
             .await
-            .map_err(|e|Error::MongoQueryError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
 
         let note_response = SingleOrderResponse {
             status: "success".to_string(),
@@ -178,14 +177,13 @@ impl MONGO {
 
     pub async fn delete_order(&self, id: &str) -> Result<DeleteOrderResponse> {
         let oid = ObjectId::from_str(id)
-            .map_err(|e|Error::MongoInvalidIDError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoInvalidIDError { e: (e.to_string()) })?;
 
         let _result = self
             .collection
             .delete_one(doc! {"_id":oid }, None)
             .await
-            .map_err(|e|Error::MongoQueryError { e: (e.to_string()) })?;
-
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
 
         let order_response = DeleteOrderResponse {
             status: "deleted".to_string(),
