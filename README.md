@@ -1,6 +1,6 @@
 # Rust Crud api
 
-Sample implementation of a rust web server using axum that integrates with posgresql and mongo db databases
+Sample implementation of a rust web server using axum that integrates with posgresql and mongo db databases.
 
 ## API Description
 
@@ -10,7 +10,7 @@ The same can be applied for MongoDB on the `/api/mongo` path.
 
 ## Deployment
 
-The application is packaged on a container for easy reuse on multiple environments. Liquibase is used for managing the PostgreSQL schema.
+The application is packaged on a container for easy reuse on multiple environments. Liquibase is used for managing the PostgreSQL schema. The published containers exists here: https://hub.docker.com/repository/docker/konkerama/rust-crud-api
 
 ## How to use
 
