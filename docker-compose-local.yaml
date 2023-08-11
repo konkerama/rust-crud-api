@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres
+    ports:
+      - 5432:5432
+    environment: 
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+  liquibase:
+    depends_on:
+      - postgres
+    image: liquibase/liquibase:latest
+    command: ["liquibase", "update", "--changeLogFile=changelog/changelog.yaml"]
+    ports:
+      - 8082:80
+    environment: 
+      - LIQUIBASE_LOG_LEVEL=fine
+      - LIQUIBASE_COMMAND_URL=jdbc:postgresql://postgres:5432/postgres?autoReconnect=true&useSSL=false
+      - LIQUIBASE_COMMAND_USERNAME=postgres
+      - LIQUIBASE_COMMAND_PASSWORD=postgres
+    volumes:
+      - ./liquibase:/liquibase/changelog
+  mongodb:
+    image: mongo
+    ports:
+      - 27017:27017
+    environment: 
+      - MONGO_INITDB_ROOT_USERNAME=username
+      - MONGO_INITDB_ROOT_PASSWORD=password

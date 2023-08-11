@@ -1,0 +1,23 @@
+databaseChangeLog:
+- changeSet:
+    id: 1689337429090-1
+    author: kostas (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: customers_pkey
+            name: customer_id
+            type: uuid
+            defaultValueComputed: 'gen_random_uuid()'
+        - column:   
+            name: customer_name
+            type: VARCHAR
+        - column:
+            name: customer_surname
+            type: VARCHAR
+        tableName: customer
+
