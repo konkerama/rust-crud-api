@@ -87,7 +87,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: rust
           push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
           tags: ${{ github.repository }}:${{github.sha}}, ${{ github.repository }}:${{needs.identify_new_version.outputs.NEW_RELEASE}}
           cache-from: type=gha
