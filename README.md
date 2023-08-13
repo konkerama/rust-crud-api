@@ -78,5 +78,8 @@ curl -X DELETE http://localhost:8000/api/mongo/<id> -s | jq
 
 ## Todo
 
-- implement tracing using opentelemetry
+- `cargo fmt` & check in gh action 
+- error handling using `thiserror`
+- remove all `unwrap()`
+- implement tracing using opentelemetry & Prometheus metrics
 - modify dependency loading with dotenv file rather than env vars
