@@ -16,6 +16,7 @@ use route::create_router;
 use tracing::level_filters::LevelFilter;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
+use dotenvy::dotenv;
 
 #[tokio::main]
 async fn main() {
@@ -23,6 +24,8 @@ async fn main() {
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "app=info,tower_http=trace");
     }
+    dotenv().expect(".env file not found");
+
     let pg = PG::init().await.unwrap();
     let mongo = MONGO::init().await.unwrap();
 
@@ -78,6 +81,7 @@ mod tests {
     }
 
     async fn api_call(method: Method, uri: &str, body: Body) -> (StatusCode, serde_json::Value) {
+        dotenv().expect(".env file not found");
         let app = init().await;
         let response = app
             .oneshot(
