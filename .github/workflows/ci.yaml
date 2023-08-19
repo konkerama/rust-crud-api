@@ -33,6 +33,9 @@ jobs:
         command: install
         args: sqlx-cli
 
+    - name: Check Format
+      run: cargo fmt --check
+
     - name: Install dependencies
       run: ./test.sh
 
