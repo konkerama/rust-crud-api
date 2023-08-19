@@ -16,7 +16,10 @@ use route::create_router;
 use tracing::level_filters::LevelFilter;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
+<<<<<<< HEAD
 use dotenvy::dotenv;
+=======
+>>>>>>> main
 
 #[tokio::main]
 async fn main() {

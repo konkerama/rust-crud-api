@@ -23,7 +23,10 @@ tracing = "0.1.37"
 futures = { version = "0.3.25", default-features = false, features = ["async-await"] }
 hyper = {version="0.14.27", features = ["full"] }
 autometrics = { version = "0.6.0", features = ["prometheus-exporter"] }
+<<<<<<< HEAD
 dotenvy = "0.15.7"
+=======
+>>>>>>> main
 
 [dev-dependencies]
 mime = "0.3"
