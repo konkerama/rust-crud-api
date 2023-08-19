@@ -18,4 +18,3 @@ pub struct CustomerModel {
     pub customer_name: Option<String>,
     pub customer_surname: Option<String>,
 }
-
