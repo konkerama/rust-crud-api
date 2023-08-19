@@ -9,6 +9,7 @@ mod schema;
 
 pub use self::error::{Error, Result};
 
+use autometrics::prometheus_exporter;
 use mongo::MONGO;
 use pg::PG;
 use route::create_router;
@@ -18,6 +19,7 @@ use tracing_subscriber::{layer::SubscriberExt, Registry};
 
 #[tokio::main]
 async fn main() {
+    prometheus_exporter::init();
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "app=info,tower_http=trace");
     }

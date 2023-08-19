@@ -8,8 +8,12 @@ use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 pub struct PG {
     pub pool: Pool<Postgres>,
 }
+use autometrics::autometrics;
+use tracing::instrument;
 
 impl PG {
+    #[instrument]
+    #[autometrics]
     pub async fn init() -> Result<Self> {
         let pg_username: String =
             std::env::var("POSTGRES_USER").expect("POSTGRES_USER must be set.");
@@ -40,6 +44,8 @@ impl PG {
         Ok(Self { pool })
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn create_customer(
         &self,
         body: &CreateCustomerSchema,
@@ -67,6 +73,8 @@ impl PG {
         Ok(customer_response)
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn list_customers(
         &self,
         limit: i64,
@@ -86,7 +94,7 @@ impl PG {
 
         let mut json_result: Vec<CustomerResponse> = Vec::new();
         for customer in query_result {
-            json_result.push(self.model_to_result(&customer).unwrap());
+            json_result.push(self.model_to_result(&customer)?);
         }
 
         let customer_response = CustomerListResponse {
@@ -97,6 +105,8 @@ impl PG {
         Ok(Some(customer_response))
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn get_customer(&self, id: &String) -> Result<Option<SingleCustomerResponse>> {
         let customer_id =
             Uuid::parse_str(id).map_err(|e| Error::SqlxUuid { e: (e.to_string()) })?;
@@ -120,6 +130,8 @@ impl PG {
         Ok(Some(customer_response))
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn delete_customer(&self, id: &String) -> Result<Option<SingleCustomerResponse>> {
         let customer_id =
             Uuid::parse_str(id).map_err(|e| Error::SqlxUuid { e: (e.to_string()) })?;
@@ -151,6 +163,8 @@ impl PG {
         Ok(Some(customer_response))
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn update_customer(
         &self,
         id: &String,
@@ -187,11 +201,19 @@ impl PG {
         Ok(customer_response)
     }
 
+    #[instrument]
+    #[autometrics]
     fn model_to_result(&self, customer: &CustomerModel) -> Result<CustomerResponse> {
         let customer_response = CustomerResponse {
             id: customer.customer_id.to_owned().to_string(),
-            name: customer.customer_name.to_owned().unwrap(),
-            surname: customer.customer_surname.to_owned().unwrap(),
+            name: customer
+                .customer_name
+                .to_owned()
+                .ok_or(Error::CustomerError)?,
+            surname: customer
+                .customer_surname
+                .to_owned()
+                .ok_or(Error::CustomerError)?,
         };
 
         Ok(customer_response)

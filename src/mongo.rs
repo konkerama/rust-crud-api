@@ -3,12 +3,14 @@ use crate::response::{
 };
 use crate::{model::OrderModel, schema::CreateOrderSchema};
 use crate::{Error, Result};
+use autometrics::autometrics;
 use futures::StreamExt;
 use mongodb::bson::{doc, oid::ObjectId, Document};
 use mongodb::options::{FindOneAndUpdateOptions, FindOptions, ReturnDocument};
 use mongodb::{bson, options::ClientOptions, Client, Collection};
 use std::convert::TryFrom;
 use std::str::FromStr;
+use tracing::instrument;
 
 #[derive(Clone, Debug)]
 pub struct MONGO {
@@ -17,6 +19,8 @@ pub struct MONGO {
 }
 
 impl MONGO {
+    #[instrument]
+    #[autometrics]
     pub async fn init() -> Result<Self> {
         let mongodb_username: String = std::env::var("ME_CONFIG_MONGODB_ADMINUSERNAME")
             .expect("ME_CONFIG_MONGODB_ADMINUSERNAME must be set.");
@@ -54,10 +58,15 @@ impl MONGO {
         })
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn fetch_orders(&self, limit: i64, page: i64) -> Result<OrderListResponse> {
         let find_options = FindOptions::builder()
             .limit(limit)
-            .skip(u64::try_from((page - 1) * limit).unwrap())
+            .skip(
+                u64::try_from((page - 1) * limit)
+                    .map_err(|e| Error::MongoParsingError { e: (e.to_string()) })?,
+            )
             .build();
 
         let mut cursor = self
@@ -69,7 +78,8 @@ impl MONGO {
         let mut json_result: Vec<OrderResponse> = Vec::new();
         while let Some(doc) = cursor.next().await {
             println!("{:?}", doc);
-            json_result.push(self.doc_to_order(&doc.unwrap())?);
+            // unwrap() is allowed as there is no case where an None type will enter the while loop
+            json_result.push(self.doc_to_order(&doc.unwrap()));
         }
 
         let json_note_list = OrderListResponse {
@@ -81,6 +91,8 @@ impl MONGO {
         Ok(json_note_list)
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn create_order(&self, body: &CreateOrderSchema) -> Result<SingleOrderResponse> {
         let customer_name = body.customer_name.to_owned();
         let product_name = body.product_name.to_owned();
@@ -107,18 +119,21 @@ impl MONGO {
             .note_collection
             .find_one(doc! {"_id":new_id }, None)
             .await
-            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?
+            .ok_or(Error::MongoError)?;
 
         let note_response = SingleOrderResponse {
             status: "success".to_string(),
             data: OrderData {
-                order: self.doc_to_order(&order_doc.unwrap()).unwrap(),
+                order: self.doc_to_order(&order_doc),
             },
         };
 
         Ok(note_response)
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn get_order(&self, id: &str) -> Result<SingleOrderResponse> {
         let oid = ObjectId::from_str(id)
             .map_err(|e| Error::MongoInvalidIDError { e: (e.to_string()) })?;
@@ -127,18 +142,21 @@ impl MONGO {
             .note_collection
             .find_one(doc! {"_id":oid }, None)
             .await
-            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?
+            .ok_or(Error::MongoError)?;
 
         let note_response = SingleOrderResponse {
             status: "success".to_string(),
             data: OrderData {
-                order: self.doc_to_order(&note_doc.unwrap()).unwrap(),
+                order: self.doc_to_order(&note_doc),
             },
         };
 
         Ok(note_response)
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn edit_order(
         &self,
         id: &str,
@@ -156,25 +174,30 @@ impl MONGO {
 
         let serialized_data = bson::to_bson(body)
             .map_err(|e| Error::MongoSerializeBsonError { e: (e.to_string()) })?;
-        let document = serialized_data.as_document().unwrap();
+        let document = serialized_data
+            .as_document()
+            .ok_or(Error::MongoSerializeError)?;
         let update = doc! {"$set": document};
 
         let note_doc = self
             .note_collection
             .find_one_and_update(query, update, find_one_and_update_options)
             .await
-            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?;
+            .map_err(|e| Error::MongoQueryError { e: (e.to_string()) })?
+            .ok_or(Error::MongoError)?;
 
         let note_response = SingleOrderResponse {
             status: "success".to_string(),
             data: OrderData {
-                order: self.doc_to_order(&note_doc.unwrap()).unwrap(),
+                order: self.doc_to_order(&note_doc),
             },
         };
 
         Ok(note_response)
     }
 
+    #[instrument]
+    #[autometrics]
     pub async fn delete_order(&self, id: &str) -> Result<DeleteOrderResponse> {
         let oid = ObjectId::from_str(id)
             .map_err(|e| Error::MongoInvalidIDError { e: (e.to_string()) })?;
@@ -192,13 +215,15 @@ impl MONGO {
         Ok(order_response)
     }
 
-    fn doc_to_order(&self, order: &OrderModel) -> Result<OrderResponse> {
+    #[instrument]
+    #[autometrics]
+    fn doc_to_order(&self, order: &OrderModel) -> OrderResponse {
         let order_response = OrderResponse {
             id: order.id.to_hex(),
             customer_name: order.customer_name.to_owned(),
             product_name: order.product_name.to_owned(),
         };
 
-        Ok(order_response)
+        order_response
     }
 }

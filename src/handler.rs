@@ -6,8 +6,10 @@ use crate::{
         SingleCustomerResponse, SingleOrderResponse,
     },
     schema::{CreateCustomerSchema, CreateOrderSchema, FilterOptions},
-    Result,
+    Error, Result,
 };
+use autometrics::autometrics;
+use tracing::instrument;
 
 use axum::{
     extract::{Path, Query, State},
@@ -16,6 +18,8 @@ use axum::{
     Json,
 };
 
+#[instrument]
+#[autometrics]
 pub async fn health_checker_handler() -> Result<impl IntoResponse> {
     const MESSAGE: &str = "Build CRUD API with Rust and MongoDB";
     tracing::info!("{}", MESSAGE);
@@ -27,7 +31,8 @@ pub async fn health_checker_handler() -> Result<impl IntoResponse> {
 }
 
 // POST /api/pg
-#[axum_macros::debug_handler]
+#[instrument]
+#[autometrics]
 pub async fn create_customer_handler(
     State(db): State<PG>,
     Json(body): Json<CreateCustomerSchema>,
@@ -42,6 +47,8 @@ pub async fn handler_404() -> impl IntoResponse {
 }
 
 // GET /api/pg
+#[instrument]
+#[autometrics]
 pub async fn list_customer_handler(
     opts: Option<Query<FilterOptions>>,
     State(db): State<PG>,
@@ -51,30 +58,36 @@ pub async fn list_customer_handler(
     let offset = opts.page.unwrap_or(0) as i64;
     let result = db.list_customers(limit, offset).await?;
 
-    Ok(Json(result.unwrap()))
+    Ok(Json(result.ok_or(Error::HandlerError)?))
 }
 
 // GET /api/pg/<customer-name>
+#[instrument]
+#[autometrics]
 pub async fn get_customer_handler(
     id: Path<String>,
     State(db): State<PG>,
 ) -> Result<Json<SingleCustomerResponse>> {
     let result = db.get_customer(&id).await?;
 
-    Ok(Json(result.unwrap()))
+    Ok(Json(result.ok_or(Error::HandlerError)?))
 }
 
 // DELETE /api/pg/<customer-name>
+#[instrument]
+#[autometrics]
 pub async fn delete_customer_handler(
     id: Path<String>,
     State(db): State<PG>,
 ) -> Result<Json<SingleCustomerResponse>> {
     let result = db.delete_customer(&id).await?;
 
-    Ok(Json(result.unwrap()))
+    Ok(Json(result.ok_or(Error::HandlerError)?))
 }
 
 // UPDATE /api/pg/<customer-name>
+#[instrument]
+#[autometrics]
 pub async fn update_customer_handler(
     id: Path<String>,
     State(db): State<PG>,
@@ -86,6 +99,8 @@ pub async fn update_customer_handler(
 }
 
 // POST /api/mongo
+#[instrument]
+#[autometrics]
 pub async fn create_order_handler(
     State(mongo): State<MONGO>,
     Json(body): Json<CreateOrderSchema>,
@@ -96,6 +111,8 @@ pub async fn create_order_handler(
 }
 
 // GET /api/mongo
+#[instrument]
+#[autometrics]
 pub async fn list_order_handler(
     opts: Option<Query<FilterOptions>>,
     State(mongo): State<MONGO>,
@@ -109,6 +126,8 @@ pub async fn list_order_handler(
 }
 
 // GET /api/mongo/:id
+#[instrument]
+#[autometrics]
 pub async fn get_order_handler(
     id: Path<String>,
     State(mongo): State<MONGO>,
@@ -119,6 +138,8 @@ pub async fn get_order_handler(
 }
 
 // PATCH /api/mongo/:id
+#[instrument]
+#[autometrics]
 pub async fn update_order_handler(
     id: Path<String>,
     State(mongo): State<MONGO>,
@@ -130,6 +151,8 @@ pub async fn update_order_handler(
 }
 
 // DELETE /api/mongo/:id
+#[instrument]
+#[autometrics]
 pub async fn delete_order_handler(
     id: Path<String>,
     State(mongo): State<MONGO>,

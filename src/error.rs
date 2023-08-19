@@ -13,6 +13,8 @@ pub enum Error {
     AuthFailNoAuthTokenCookie,
     AuthFailTokenWrongFormat,
     AuthFailCtxNotInRequestExt,
+    CustomerError,
+    HandlerError,
 
     // DB Errors
     PGError { e: String },
@@ -22,6 +24,9 @@ pub enum Error {
     MongoQueryError { e: String },
     MongoInvalidIDError { e: String },
     MongoSerializeBsonError { e: String },
+
+    MongoSerializeError,
+    MongoError,
 
     // -- Model errors.
     TicketDeleteFailIdNotFound { id: u64 },
@@ -63,8 +68,20 @@ impl Error {
             | Self::AuthFailCtxNotInRequestExt => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
 
             // -- Model.
+            Self::CustomerError => {
+                tracing::error!("Customer Error");
+                (StatusCode::BAD_REQUEST, ClientError::DATABASE_ERROR)
+            }
+
+            // -- Model.
             Self::PGError { e } => {
                 tracing::error!("DB Error {}", e);
+                (StatusCode::BAD_REQUEST, ClientError::DATABASE_ERROR)
+            }
+
+            // -- Model.
+            Self::HandlerError => {
+                tracing::error!("DB Error");
                 (StatusCode::BAD_REQUEST, ClientError::DATABASE_ERROR)
             }
 
@@ -101,6 +118,18 @@ impl Error {
             // -- Model.
             Self::MongoSerializeBsonError { e } => {
                 tracing::error!("DB Error {}", e);
+                (StatusCode::BAD_REQUEST, ClientError::DATABASE_ERROR)
+            }
+
+            // -- Model.
+            Self::MongoSerializeError => {
+                tracing::error!("DB Error");
+                (StatusCode::BAD_REQUEST, ClientError::DATABASE_ERROR)
+            }
+
+            // -- Model.
+            Self::MongoError => {
+                tracing::error!("DB Error");
                 (StatusCode::BAD_REQUEST, ClientError::DATABASE_ERROR)
             }
 
