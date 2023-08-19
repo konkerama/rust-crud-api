@@ -99,6 +99,7 @@ jobs:
     name: Bump up Release
     runs-on: ubuntu-latest
     needs: docker_build_push
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     steps:
     - uses: actions/checkout@v2
       with:

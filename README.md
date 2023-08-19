@@ -80,4 +80,3 @@ curl -X DELETE http://localhost:8000/api/mongo/<id> -s | jq
 
 - error handling using `thiserror`
 - implement tracing using opentelemetry
-- modify dependency loading with dotenv file rather than env vars

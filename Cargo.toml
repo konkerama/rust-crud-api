@@ -9,7 +9,6 @@ axum = "0.6.20"
 tower-http = { version = "0.4.0", features = ["cors","trace"] }
 tracing-subscriber = "0.3.17"
 chrono = { version = "0.4.23", features = ["serde"] }
-dotenv = "0.15.0"
 mongodb = { version = "2.3.1", features = ["bson-chrono-0_4"] }
 serde = { version = "1.0.152", features = ["derive"] }
 sqlx = {version="0.7.1", features = ["runtime-async-std-native-tls", "postgres", "uuid", "chrono"]}
@@ -24,6 +23,7 @@ tracing = "0.1.37"
 futures = { version = "0.3.25", default-features = false, features = ["async-await"] }
 hyper = {version="0.14.27", features = ["full"] }
 autometrics = { version = "0.6.0", features = ["prometheus-exporter"] }
+dotenvy = "0.15.7"
 
 [dev-dependencies]
 mime = "0.3"
