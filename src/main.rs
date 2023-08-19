@@ -10,16 +10,13 @@ mod schema;
 pub use self::error::{Error, Result};
 
 use autometrics::prometheus_exporter;
+use dotenvy::dotenv;
 use mongo::MONGO;
 use pg::PG;
 use route::create_router;
 use tracing::level_filters::LevelFilter;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
-<<<<<<< HEAD
-use dotenvy::dotenv;
-=======
->>>>>>> main
 
 #[tokio::main]
 async fn main() {
