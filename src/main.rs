@@ -17,7 +17,6 @@ use mongo::MONGO;
 use pg::PG;
 use route::create_router;
 use tracing::level_filters::LevelFilter;
-use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
 #[tokio::main]
@@ -26,9 +25,25 @@ async fn main() {
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "app=info,tower_http=trace");
     }
+    if std::env::var_os("LOG_LEVEL").is_none() {
+        std::env::set_var("LOG_LEVEL", "info");
+    }
+    let env_log_level = std::env::var("LOG_LEVEL").unwrap();
+
+    if let Some(level_filter) = string_to_level_filter(&env_log_level){
+        let subscriber = Registry::default()
+        .with(level_filter)
+        .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stdout));
+
+        tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
+    } else {
+        eprintln!("Invalid log level: {}", env_log_level);
+    }
+
+    tracing::info!("Initializing config...");
     let config = Config::init();
 
-    // retrieve configuration variables
+    tracing::info!("Retrieving Configuration Variables ...");
     let pg_username: String = config.get_config("POSTGRES_USER");
     let pg_passwd: String = config.get_config("POSTGRES_PASSWORD");
     let pg_url: String = config.get_config("POSTGRES_URL");
@@ -37,18 +52,15 @@ async fn main() {
     let mongodb_passwd: String = config.get_config("ME_CONFIG_MONGODB_ADMINPASSWORD");
     let mongodb_server: String = config.get_config("ME_CONFIG_MONGODB_SERVER");
 
+    tracing::info!("Setting up connection to Postgresql...");
     let pg = PG::init(pg_username, pg_passwd, pg_url, pg_db)
         .await
         .unwrap();
+    tracing::info!("Setting up connection to MongoDB...");
     let mongo = MONGO::init(mongodb_username, mongodb_passwd, mongodb_server)
         .await
         .unwrap();
 
-    let subscriber = Registry::default()
-        .with(LevelFilter::from_level(Level::DEBUG))
-        .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stdout));
-
-    tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
     let app = create_router(pg.clone(), mongo.clone());
 
     tracing::info!("🚀 Server started successfully");
@@ -56,6 +68,17 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+fn string_to_level_filter(level: &String) -> Option<LevelFilter> {
+    match level.to_lowercase().as_str() {
+        "error" => Some(LevelFilter::ERROR),
+        "warn" => Some(LevelFilter::WARN),
+        "info" => Some(LevelFilter::INFO),
+        "debug" => Some(LevelFilter::DEBUG),
+        "trace" => Some(LevelFilter::TRACE),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

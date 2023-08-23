@@ -12,9 +12,10 @@ services:
     restart: unless-stopped
     environment:
       - ENV=dev
+      - LOG_LEVEL=debug
       - ME_CONFIG_MONGODB_ADMINUSERNAME=username
       - ME_CONFIG_MONGODB_ADMINPASSWORD=password
-      - ME_CONFIG_MONGODB_SERVER=localhost
+      - ME_CONFIG_MONGODB_SERVER=mongodb
       - MONGO_INITDB_DATABASE=rust_mongodb
       - MONGODB_NOTE_COLLECTION=notes
       - POSTGRES_USER=postgres

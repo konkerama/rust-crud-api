@@ -11,7 +11,7 @@ impl Config {
         match std::env::var("CONFIG_DIRECTORY") {
             Ok(path) => Self { filepath: path },
             Err(_) => {
-                tracing::error!("CONFIG_DIRECTORY environment variable not set");
+                tracing::warn!("CONFIG_DIRECTORY environment variable not set");
                 Self {
                     filepath: "".to_string(),
                 }
