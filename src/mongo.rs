@@ -54,7 +54,7 @@ impl MONGO {
         let note_collection = database.collection(mongodb_note_collection.as_str());
         let collection = database.collection::<Document>(mongodb_note_collection.as_str());
 
-        println!("✅ Database connected successfully");
+        tracing::info!("✅ Database connected successfully");
 
         Ok(Self {
             note_collection,
