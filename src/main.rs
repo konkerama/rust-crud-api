@@ -47,7 +47,7 @@ async fn main() {
     let pg_username: String = config.get_config("POSTGRES_USER");
     let pg_passwd: String = config.get_config("POSTGRES_PASSWORD");
     let pg_url: String = config.get_config("POSTGRES_URL");
-    let pg_db: String = config.get_config("POSTGRES_URL");
+    let pg_db: String = config.get_config("POSTGRES_DB");
     let mongodb_username: String = config.get_config("ME_CONFIG_MONGODB_ADMINUSERNAME");
     let mongodb_passwd: String = config.get_config("ME_CONFIG_MONGODB_ADMINPASSWORD");
     let mongodb_server: String = config.get_config("ME_CONFIG_MONGODB_SERVER");
