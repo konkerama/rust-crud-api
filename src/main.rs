@@ -30,10 +30,10 @@ async fn main() {
     }
     let env_log_level = std::env::var("LOG_LEVEL").unwrap();
 
-    if let Some(level_filter) = string_to_level_filter(&env_log_level){
+    if let Some(level_filter) = string_to_level_filter(&env_log_level) {
         let subscriber = Registry::default()
-        .with(level_filter)
-        .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stdout));
+            .with(level_filter)
+            .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stdout));
 
         tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
     } else {
