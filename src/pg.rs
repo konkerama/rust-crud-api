@@ -14,13 +14,18 @@ use tracing::instrument;
 impl PG {
     #[instrument]
     #[autometrics]
-    pub async fn init() -> Result<Self> {
-        let pg_username: String =
-            std::env::var("POSTGRES_USER").expect("POSTGRES_USER must be set.");
-        let pg_passwd: String =
-            std::env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set.");
-        let pg_url: String = std::env::var("POSTGRES_URL").expect("POSTGRES_URL must be set.");
-        let pg_db: String = std::env::var("POSTGRES_DB").expect("POSTGRES_DB must be set.");
+    pub async fn init(
+        pg_username: String,
+        pg_passwd: String,
+        pg_url: String,
+        pg_db: String,
+    ) -> Result<Self> {
+        // let pg_username: String =
+        //     std::env::var("POSTGRES_USER").expect("POSTGRES_USER must be set.");
+        // let pg_passwd: String =
+        //     std::env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set.");
+        // let pg_url: String = std::env::var("POSTGRES_URL").expect("POSTGRES_URL must be set.");
+        // let pg_db: String = std::env::var("POSTGRES_DB").expect("POSTGRES_DB must be set.");
         let pg_uri = format!(
             "postgresql://{}:{}@{}:5432/{}",
             pg_username, pg_passwd, pg_url, pg_db
