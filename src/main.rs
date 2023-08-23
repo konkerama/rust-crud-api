@@ -1,5 +1,6 @@
 mod error;
 mod handler;
+mod helper;
 mod model;
 mod mongo;
 mod pg;
@@ -10,7 +11,8 @@ mod schema;
 pub use self::error::{Error, Result};
 
 use autometrics::prometheus_exporter;
-use dotenvy::dotenv;
+// use dotenvy::dotenv;
+use helper::Config;
 use mongo::MONGO;
 use pg::PG;
 use route::create_router;
@@ -24,13 +26,23 @@ async fn main() {
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "app=info,tower_http=trace");
     }
-    dotenv().expect(".env file not found");
+    let config = Config::init();
 
-    let pg = PG::init().await.unwrap();
-    let mongo = MONGO::init().await.unwrap();
+    // retrieve configuration variables
+    let pg_username: String = config.get_config("POSTGRES_USER");
+    let pg_passwd: String = config.get_config("POSTGRES_PASSWORD");
+    let pg_url: String = config.get_config("POSTGRES_URL");
+    let pg_db: String = config.get_config("POSTGRES_URL");
+    let mongodb_username: String = config.get_config("ME_CONFIG_MONGODB_ADMINUSERNAME");
+    let mongodb_passwd: String = config.get_config("ME_CONFIG_MONGODB_ADMINPASSWORD");
+    let mongodb_server: String = config.get_config("ME_CONFIG_MONGODB_SERVER");
 
-    // todo remove this
-    // dotenv().ok();
+    let pg = PG::init(pg_username, pg_passwd, pg_url, pg_db)
+        .await
+        .unwrap();
+    let mongo = MONGO::init(mongodb_username, mongodb_passwd, mongodb_server)
+        .await
+        .unwrap();
 
     let subscriber = Registry::default()
         .with(LevelFilter::from_level(Level::DEBUG))
@@ -60,8 +72,23 @@ mod tests {
     use tower::ServiceExt; // for `oneshot` and `ready`
 
     async fn init() -> Router {
-        let pg = PG::init().await.unwrap();
-        let mongo = MONGO::init().await.unwrap();
+        let config = Config::init();
+
+        // retrieve configuration variables
+        let pg_username: String = config.get_config("POSTGRES_USER");
+        let pg_passwd: String = config.get_config("POSTGRES_PASSWORD");
+        let pg_url: String = config.get_config("POSTGRES_URL");
+        let pg_db: String = config.get_config("POSTGRES_DB");
+        let mongodb_username: String = config.get_config("ME_CONFIG_MONGODB_ADMINUSERNAME");
+        let mongodb_passwd: String = config.get_config("ME_CONFIG_MONGODB_ADMINPASSWORD");
+        let mongodb_server: String = config.get_config("ME_CONFIG_MONGODB_SERVER");
+
+        let pg = PG::init(pg_username, pg_passwd, pg_url, pg_db)
+            .await
+            .unwrap();
+        let mongo = MONGO::init(mongodb_username, mongodb_passwd, mongodb_server)
+            .await
+            .unwrap();
 
         create_router(pg.clone(), mongo.clone())
     }
@@ -81,7 +108,7 @@ mod tests {
     }
 
     async fn api_call(method: Method, uri: &str, body: Body) -> (StatusCode, serde_json::Value) {
-        dotenv().expect(".env file not found");
+        // dotenv().expect(".env file not found");
         let app = init().await;
         let response = app
             .oneshot(

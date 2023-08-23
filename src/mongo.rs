@@ -21,13 +21,17 @@ pub struct MONGO {
 impl MONGO {
     #[instrument]
     #[autometrics]
-    pub async fn init() -> Result<Self> {
-        let mongodb_username: String = std::env::var("ME_CONFIG_MONGODB_ADMINUSERNAME")
-            .expect("ME_CONFIG_MONGODB_ADMINUSERNAME must be set.");
-        let mongodb_passwd: String = std::env::var("ME_CONFIG_MONGODB_ADMINPASSWORD")
-            .expect("ME_CONFIG_MONGODB_ADMINPASSWORD must be set.");
-        let mongodb_server: String = std::env::var("ME_CONFIG_MONGODB_SERVER")
-            .expect("ME_CONFIG_MONGODB_SERVER must be set.");
+    pub async fn init(
+        mongodb_username: String,
+        mongodb_passwd: String,
+        mongodb_server: String,
+    ) -> Result<Self> {
+        // let mongodb_username: String = std::env::var("ME_CONFIG_MONGODB_ADMINUSERNAME")
+        //     .expect("ME_CONFIG_MONGODB_ADMINUSERNAME must be set.");
+        // let mongodb_passwd: String = std::env::var("ME_CONFIG_MONGODB_ADMINPASSWORD")
+        //     .expect("ME_CONFIG_MONGODB_ADMINPASSWORD must be set.");
+        // let mongodb_server: String = std::env::var("ME_CONFIG_MONGODB_SERVER")
+        //     .expect("ME_CONFIG_MONGODB_SERVER must be set.");
         let mongodb_uri = format!(
             "mongodb://{}:{}@{}/",
             mongodb_username, mongodb_passwd, mongodb_server
